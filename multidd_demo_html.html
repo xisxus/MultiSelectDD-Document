@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MultiSelect DD - Demo</title>
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- MultiSelect DD CSS -->
+    <link rel="stylesheet" href="multidd_css_file.css">
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .demo-card {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .demo-card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .form-group small {
+            display: block;
+            margin-top: 5px;
+            color: #666;
+            font-size: 12px;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+        
+        .result-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .result-box.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .result-box h4 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .result-box pre {
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 13px;
+            color: #333;
+        }
+        
+        .code-example {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 20px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+        
+        .code-example code {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .demo-card {
+                padding: 20px;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 MultiSelect DD</h1>
+            <p>jQuery Plugin for .NET Projects</p>
+        </div>
+
+        <!-- Example 1: Auto-Initialize -->
+        <div class="demo-card">
+            <h2>📋 Example 1: Auto-Initialize</h2>
+            <p style="color: #666; margin-bottom: 20px;">Simply add class <code>multiDD</code> to your select element</p>
+            
+            <div class="form-group">
+                <label for="countries">Select Countries</label>
+                <select id="countries" name="countries" class="multiDD" multiple>
+                    <option value="us">United States</option>
+                    <option value="uk">United Kingdom</option>
+                    <option value="ca">Canada</option>
+                    <option value="au">Australia</option>
+                    <option value="de">Germany</option>
+                    <option value="fr">France</option>
+                    <option value="jp">Japan</option>
+                    <option value="cn">China</option>
+                    <option value="in">India</option>
+                    <option value="br">Brazil</option>
+                </select>
+                <small>First 2 items shown, then count appears</small>
+            </div>
+            
+            <div class="code-example">
+                <code>&lt;select class="multiDD" name="countries" multiple&gt;
+    &lt;option value="us"&gt;United States&lt;/option&gt;
+    &lt;option value="uk"&gt;United Kingdom&lt;/option&gt;
+&lt;/select&gt;</code>
+            </div>
+        </div>
+
+        <!-- Example 2: Manual Initialize with Options -->
+        <div class="demo-card">
+            <h2>⚙️ Example 2: Custom Options</h2>
+            <p style="color: #666; margin-bottom: 20px;">Initialize with custom settings</p>
+            
+            <div class="form-group">
+                <label for="skills">Select Your Skills (Max 5)</label>
+                <select id="skills" name="skills" multiple>
+                    <option value="js">JavaScript</option>
+                    <option value="cs">C# / .NET</option>
+                    <option value="py">Python</option>
+                    <option value="java">Java</option>
+                    <option value="php">PHP</option>
+                    <option value="ruby">Ruby</option>
+                    <option value="go">Go</option>
+                    <option value="rust">Rust</option>
+                    <option value="swift">Swift</option>
+                    <option value="kotlin">Kotlin</option>
+                </select>
+                <small>With search, max 5 selections, and close on select</small>
+            </div>
+            
+            <div class="code-example">
+                <code>$('#skills').multiSelectDD({
+    placeholder: 'Choose your skills',
+    max: 5,
+    closeOnSelect: false,
+    selectAll: false
+});</code>
+            </div>
+        </div>
+
+        <!-- Example 3: With Data Array -->
+        <div class="demo-card">
+            <h2>📊 Example 3: Load from JavaScript</h2>
+            <p style="color: #666; margin-bottom: 20px;">Populate using JavaScript data array</p>
+            
+            <div class="form-group">
+                <label for="categories">Select Categories</label>
+                <select id="categories" name="categories" multiple></select>
+                <small>Data loaded via JavaScript array</small>
+            </div>
+            
+            <div class="code-example">
+                <code>$('#categories').multiSelectDD({
+    data: [
+        { value: '1', text: 'Electronics', selected: true },
+        { value: '2', text: 'Clothing' },
+        { value: '3', text: 'Books' }
+    ]
+});</code>
+            </div>
+        </div>
+
+        <!-- Example 4: AJAX Simulation -->
+        <div class="demo-card">
+            <h2>🌐 Example 4: AJAX Data (Simulated)</h2>
+            <p style="color: #666; margin-bottom: 20px;">Load data dynamically from server</p>
+            
+            <div class="form-group">
+                <label for="products">Select Products</label>
+                <select id="products" name="products" multiple></select>
+                <small>Simulated AJAX loading</small>
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn btn-success" onclick="loadProducts()">Load Products</button>
+                <button class="btn btn-danger" onclick="clearProducts()">Clear Products</button>
+            </div>
+            
+            <div class="code-example">
+                <code>$('#products').multiSelectDD({
+    ajax: '/api/products',
+    pagination: {
+        enabled: true,
+        pageSize: 20
+    }
+});</code>
+            </div>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="demo-card">
+            <h2>🎮 Control Panel</h2>
+            <p style="color: #666; margin-bottom: 20px;">Test jQuery methods and API calls</p>
+            
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="getValues()">Get Values</button>
+                <button class="btn btn-primary" onclick="setValues()">Set Values</button>
+                <button class="btn btn-secondary" onclick="selectAll()">Select All</button>
+                <button class="btn btn-secondary" onclick="clearAll()">Clear All</button>
+                <button class="btn btn-secondary" onclick="toggleDisable()">Toggle Disable</button>
+                <button class="btn btn-secondary" onclick="refreshDropdowns()">Refresh All</button>
+                <button class="btn btn-danger" onclick="destroyAll()">Destroy Plugin</button>
+                <button class="btn btn-success" onclick="reinitialize()">Re-Initialize</button>
+            </div>
+            
+            <div id="result" class="result-box">
+                <h4>📤 Output:</h4>
+                <pre id="result-content"></pre>
+            </div>
+        </div>
+
+        <!-- .NET Integration Example -->
+        <div class="demo-card">
+            <h2>💻 .NET Integration Example</h2>
+            
+            <div class="code-example">
+                <code><strong>Controller:</strong>
+public IActionResult Index()
+{
+    ViewBag.Countries = new List&lt;SelectListItem&gt;
+    {
+        new SelectListItem { Value = "us", Text = "United States" },
+        new SelectListItem { Value = "uk", Text = "United Kingdom" }
+    };
+    return View();
+}
+
+<strong>Razor View:</strong>
+&lt;select name="countries" class="multiDD" multiple&gt;
+    @foreach(var country in ViewBag.Countries)
+    {
+        &lt;option value="@country.Value"&gt;@country.Text&lt;/option&gt;
+    }
+&lt;/select&gt;
+
+<strong>Get Values in Controller:</strong>
+[HttpPost]
+public IActionResult Save(List&lt;string&gt; countries)
+{
+    // countries contains selected values
+    return RedirectToAction("Index");
+}</code>
+            </div>
+        </div>
+    </div>
+
+    <!-- MultiSelect DD JS -->
+    <script src="multidd_js_file.js"></script>
+    
+    <script>
+        // Example 2: Manual initialization with custom options
+        $('#skills').multiSelectDD({
+            placeholder: 'Choose your skills',
+            max: 5,
+            closeOnSelect: false,
+            selectAll: false,
+            onMaxReached: function(max) {
+                alert('You can only select up to ' + max + ' skills!');
+            }
+        });
+
+        // Example 3: Load from data array
+        $('#categories').multiSelectDD({
+            placeholder: 'Select categories',
+            data: [
+                { value: '1', text: 'Electronics', selected: true },
+                { value: '2', text: 'Clothing', selected: false },
+                { value: '3', text: 'Books', selected: false },
+                { value: '4', text: 'Home & Garden', selected: false },
+                { value: '5', text: 'Sports & Outdoors', selected: false },
+                { value: '6', text: 'Toys & Games', selected: false }
+            ]
+        });
+
+        // Example 4: AJAX simulation
+        function loadProducts() {
+            // Simulate AJAX response
+            const products = [
+                { value: 'p1', text: 'Laptop' },
+                { value: 'p2', text: 'Mouse' },
+                { value: 'p3', text: 'Keyboard' },
+                { value: 'p4', text: 'Monitor' },
+                { value: 'p5', text: 'Headphones' },
+                { value: 'p6', text: 'Webcam' },
+                { value: 'p7', text: 'USB Cable' },
+                { value: 'p8', text: 'External HDD' }
+            ];
+
+            $('#products').multiSelectDD({
+                placeholder: 'Select products',
+                data: products,
+                search: true
+            });
+        }
+
+        function clearProducts() {
+            $('#products').multiSelectDD('destroy');
+            $('#products').empty();
+        }
+
+        // Control Panel Functions
+        function getValues() {
+            const countries = $('#countries').val();
+            const skills = $('#skills').val();
+            const categories = $('#categories').val();
+            const products = $('#products').val();
+
+            const output = {
+                countries: countries,
+                skills: skills,
+                categories: categories,
+                products: products
+            };
+
+            $('#result-content').text(JSON.stringify(output, null, 2));
+            $('#result').addClass('show');
+        }
+
+        function setValues() {
+            $('#countries').val(['us', 'uk', 'ca']);
+            $('#skills').multiSelectDD('val', ['js', 'cs', 'py']);
+            $('#categories').multiSelectDD('val', ['1', '2']);
+            
+            $('#result-content').text('Values set programmatically!\n\nCountries: us, uk, ca\nSkills: js, cs, py\nCategories: 1, 2');
+            $('#result').addClass('show');
+        }
+
+        function selectAll() {
+            $('#countries').multiSelectDD('selectAll');
+            $('#result-content').text('All options selected in Countries dropdown');
+            $('#result').addClass('show');
+        }
+
+        function clearAll() {
+            $('#countries').multiSelectDD('clear');
+            $('#skills').multiSelectDD('clear');
+            $('#categories').multiSelectDD('clear');
+            $('#products').multiSelectDD('clear');
+            
+            $('#result-content').text('All dropdowns cleared');
+            $('#result').addClass('show');
+        }
+
+        let isDisabled = false;
+        function toggleDisable() {
+            isDisabled = !isDisabled;
+            
+            if (isDisabled) {
+                $('#countries').multiSelectDD('disable');
+                $('#skills').multiSelectDD('disable');
+                $('#result-content').text('Dropdowns disabled');
+            } else {
+                $('#countries').multiSelectDD('enable');
+                $('#skills').multiSelectDD('enable');
+                $('#result-content').text('Dropdowns enabled');
+            }
+            $('#result').addClass('show');
+        }
+
+        function refreshDropdowns() {
+            $('#countries').multiSelectDD('refresh');
+            $('#skills').multiSelectDD('refresh');
+            $('#categories').multiSelectDD('refresh');
+            
+            $('#result-content').text('All dropdowns refreshed');
+            $('#result').addClass('show');
+        }
+
+        function destroyAll() {
+            $('#countries').multiSelectDD('destroy');
+            $('#skills').multiSelectDD('destroy');
+            $('#categories').multiSelectDD('destroy');
+            $('#products').multiSelectDD('destroy');
+            
+            $('#result-content').text('Plugin destroyed. Click "Re-Initialize" to restore.');
+            $('#result').addClass('show');
+        }
+
+        function reinitialize() {
+            // Re-initialize with class
+            $('.multiDD').multiSelectDD();
+            
+            // Re-initialize skills with options
+            $('#skills').multiSelectDD({
+                placeholder: 'Choose your skills',
+                max: 5,
+                selectAll: false
+            });
+            
+            // Re-initialize categories with data
+            $('#categories').multiSelectDD({
+                data: [
+                    { value: '1', text: 'Electronics', selected: true },
+                    { value: '2', text: 'Clothing' },
+                    { value: '3', text: 'Books' },
+                    { value: '4', text: 'Home & Garden' },
+                    { value: '5', text: 'Sports & Outdoors' },
+                    { value: '6', text: 'Toys & Games' }
+                ]
+            });
+            
+            $('#result-content').text('Plugin re-initialized successfully!');
+            $('#result').addClass('show');
+        }
+
+        // Event listeners
+        $('#countries').on('change', function() {
+            console.log('Countries changed:', $(this).val());
+        });
+
+        $('#skills').on('change', function() {
+            console.log('Skills changed:', $(this).val());
+        });
+    </script>
+</body>
+</html>
