@@ -345,6 +345,7 @@
                 <button class="btn btn-secondary" onclick="refreshDropdowns()">Refresh All</button>
                 <button class="btn btn-danger" onclick="destroyAll()">Destroy Plugin</button>
                 <button class="btn btn-success" onclick="reinitialize()">Re-Initialize</button>
+                <a class="btn btn-success" href="/playground.html">Playground</a>
             </div>
             
             <div id="result" class="result-box">
@@ -358,31 +359,31 @@
             <h2>💻 .NET Integration Example</h2>
             
             <div class="code-example">
-                <code><strong>Controller:</strong>
-public IActionResult Index()
-{
-    ViewBag.Countries = new List&lt;SelectListItem&gt;
-    {
-        new SelectListItem { Value = "us", Text = "United States" },
-        new SelectListItem { Value = "uk", Text = "United Kingdom" }
-    };
-    return View();
-}
+                <code><strong>Controller:</strong> <br>
+public IActionResult Index()<br>
+{<br>
+ &nbsp;&nbsp;&nbsp;   ViewBag.Countries = new List&lt;SelectListItem&gt;<br>
+ &nbsp;&nbsp;&nbsp;   {<br>
+ &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;      new SelectListItem { Value = "us", Text = "United States" },<br>
+ &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;      new SelectListItem { Value = "uk", Text = "United Kingdom" }<br>
+ &nbsp;&nbsp;&nbsp;   };<br>
+ &nbsp;&nbsp;&nbsp;   return View();<br>
+}<br>
 
-<strong>Razor View:</strong>
-&lt;select name="countries" class="multiDD" multiple&gt;
-    @foreach(var country in ViewBag.Countries)
-    {
-        &lt;option value="@country.Value"&gt;@country.Text&lt;/option&gt;
-    }
-&lt;/select&gt;
+<strong>Razor View:</strong><br>
+ &lt;select name="countries" class="multiDD" multiple&gt;<br>
+&nbsp;&nbsp;&nbsp;    @foreach(var country in ViewBag.Countries)<br>
+&nbsp;&nbsp;&nbsp;    {<br>
+&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;       &lt;option value="@country.Value"&gt;@country.Text&lt;/option&gt;<br>
+&nbsp;&nbsp;&nbsp;    }<br>
+&lt;/select&gt;<br>
 
-<strong>Get Values in Controller:</strong>
-[HttpPost]
-public IActionResult Save(List&lt;string&gt; countries)
-{
-    // countries contains selected values
-    return RedirectToAction("Index");
+<strong>Get Values in Controller:</strong><br>
+[HttpPost]<br>
+public IActionResult Save(List&lt;string&gt; countries)<br>
+{<br>
+ &nbsp;&nbsp;&nbsp;   // countries contains selected values<br>
+ &nbsp;&nbsp;&nbsp;   return RedirectToAction("Index");<br>
 }</code>
             </div>
         </div>

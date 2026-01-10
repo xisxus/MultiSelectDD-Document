@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MultiSelect DD - Playground</title>
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- MultiSelect DD CSS -->
+    <link rel="stylesheet" href="multidd_css_file.css">
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .playground {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .panel {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .panel h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .config-group {
+            margin-bottom: 20px;
+        }
+        
+        .config-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .config-group input[type="text"],
+        .config-group input[type="number"],
+        .config-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .checkbox-group label {
+            margin: 0;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .test-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .output {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 4px;
+            font-size: 13px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .output h4 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .output pre {
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        
+        .action-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        @media (max-width: 1024px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .event-log {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        
+        .event-log-item {
+            padding: 4px 0;
+            border-bottom: 1px solid #3a3f4b;
+        }
+        
+        .event-log-item:last-child {
+            border-bottom: none;
+        }
+        
+        .timestamp {
+            color: #61afef;
+        }
+        
+        .event-type {
+            color: #98c379;
+            font-weight: bold;
+        }
+        
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .code-display {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 20px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+        
+        .code-display code {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .btn-group .btn {
+            width: auto;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="playground">
+        <div class="header">
+            <h1>🎮 MultiSelect DD Playground</h1>
+            <p>Test and configure your dropdown in real-time</p>
+        </div>
+
+        <div class="layout">
+            <!-- Configuration Panel -->
+            <div class="panel">
+                <h2>⚙️ Configuration</h2>
+                
+                <div class="config-group">
+                    <label for="placeholder">Placeholder Text</label>
+                    <input type="text" id="placeholder" value="Select item(s)">
+                </div>
+                
+                <div class="config-group">
+                    <label>Options</label>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="search" checked>
+                        <label for="search">Enable Search</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="selectAll" checked>
+                        <label for="selectAll">Show Select All</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="listAll">
+                        <label for="listAll">List All Selected Items</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="closeOnSelect">
+                        <label for="closeOnSelect">Close on Select</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="allowClear" checked>
+                        <label for="allowClear">Allow Clear</label>
+                    </div>
+                </div>
+                
+                <div class="config-group">
+                    <label for="maxItems">Max Items (0 = unlimited)</label>
+                    <input type="number" id="maxItems" value="0" min="0">
+                </div>
+                
+                <div class="config-group">
+                    <label for="minItems">Min Items (0 = none)</label>
+                    <input type="number" id="minItems" value="0" min="0">
+                </div>
+                
+                <button class="btn btn-primary" onclick="applyConfig()">Apply Configuration</button>
+                <button class="btn btn-secondary" onclick="resetConfig()">Reset to Defaults</button>
+                
+                <div class="test-section">
+                    <h3 style="margin-bottom: 15px; font-size: 1.1rem;">Quick Actions</h3>
+                    <div class="action-grid">
+                        <button class="btn btn-success" onclick="testSelectAll()">Select All</button>
+                        <button class="btn btn-danger" onclick="testClear()">Clear All</button>
+                        <button class="btn btn-secondary" onclick="testSetValues()">Set Random</button>
+                        <button class="btn btn-secondary" onclick="testToggleDisable()">Toggle Disable</button>
+                        <button class="btn btn-secondary" onclick="testAddOption()">Add Option</button>
+                        <button class="btn btn-secondary" onclick="testRemoveOption()">Remove Last</button>
+                        <button class="btn btn-primary" onclick="testGetValues()">Get Values</button>
+                        <button class="btn btn-danger" onclick="testDestroy()">Destroy</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test Dropdown Panel -->
+            <div class="panel">
+                <h2>🎯 Test Dropdown</h2>
+                
+                <div class="config-group">
+                    <label for="testDropdown">Your Multi-Select Dropdown</label>
+                    <select id="testDropdown" name="test" multiple>
+                        <option value="1">JavaScript</option>
+                        <option value="2">Python</option>
+                        <option value="3">C#</option>
+                        <option value="4">Java</option>
+                        <option value="5">PHP</option>
+                        <option value="6">Ruby</option>
+                        <option value="7">Go</option>
+                        <option value="8">Rust</option>
+                        <option value="9">Swift</option>
+                        <option value="10">Kotlin</option>
+                        <option value="11">TypeScript</option>
+                        <option value="12">C++</option>
+                        <option value="13">Scala</option>
+                        <option value="14">Dart</option>
+                        <option value="15">Elixir</option>
+                    </select>
+                </div>
+                
+                <div class="output" id="output">
+                    <h4>📊 Current State</h4>
+                    <pre id="stateOutput">No values selected</pre>
+                </div>
+                
+                <div class="event-log" id="eventLog">
+                    <div style="color: #61afef; margin-bottom: 10px;">📝 Event Log</div>
+                </div>
+
+
+                <!-- Configuration Code Panel -->
+            <div class=" output">
+                <h2>💻 Current Configuration Code</h2>
+                
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="updateConfigCode()">Refresh Code</button>
+                    <button class="btn btn-secondary" onclick="copyConfigCode()">Copy to Clipboard</button>
+                </div>
+                
+                <div class="code-display">
+                    <code id="configCode"></code>
+                </div>
+            </div>
+
+            </div>
+
+            
+
+            <!-- Data Testing Panel -->
+            <div class="panel ">
+                <h2>💾 Data Testing</h2>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                    <div>
+                        <h4 style="margin-bottom: 10px;">Load Countries</h4>
+                        <button class="btn btn-primary" onclick="loadCountries()">Load Data</button>
+                    </div>
+                    <div>
+                        <h4 style="margin-bottom: 10px;">Load Products</h4>
+                        <button class="btn btn-primary" onclick="loadProducts()">Load Data</button>
+                    </div>
+                    <div>
+                        <h4 style="margin-bottom: 10px;">Load Colors</h4>
+                        <button class="btn btn-primary" onclick="loadColors()">Load Data</button>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <h4 style="margin-bottom: 10px;">Custom Data (JSON)</h4>
+                    <textarea id="customData" style="width: 100%; height: 100px; padding: 10px; font-family: monospace; border: 1px solid #dee2e6; border-radius: 5px;" placeholder='[{"value": "1", "text": "Item 1", "selected": false}]'></textarea>
+                    <button class="btn btn-success" onclick="loadCustomData()" style="margin-top: 10px;">Load Custom Data</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MultiSelect DD JS -->
+    <script src="multidd_js_file.js"></script>
+    
+    <script>
+        let eventCounter = 0;
+        const maxEvents = 20;
+
+        // Initialize dropdown
+        $('#testDropdown').multiSelectDD({
+            onChange: function(value, text, item) {
+                logEvent('CHANGE', `Value: ${value}, Text: ${text}, Selected: ${item.selected}`);
+                updateState();
+            },
+            onSelect: function(value, text) {
+                logEvent('SELECT', `${text} (${value})`);
+            },
+            onUnselect: function(value, text) {
+                logEvent('UNSELECT', `${text} (${value})`);
+            },
+            onMaxReached: function(max) {
+                logEvent('MAX_REACHED', `Maximum ${max} items allowed!`);
+                alert(`Maximum ${max} items allowed!`);
+            }
+        });
+
+        function logEvent(type, message) {
+            eventCounter++;
+            const timestamp = new Date().toLocaleTimeString();
+            const $log = $('#eventLog');
+            
+            const eventHtml = `<div class="event-log-item">
+                <span class="timestamp">[${timestamp}]</span> 
+                <span class="event-type">${type}</span>: ${message}
+            </div>`;
+            
+            $log.append(eventHtml);
+            
+            // Keep only last N events
+            const items = $log.find('.event-log-item');
+            if (items.length > maxEvents) {
+                items.first().remove();
+            }
+            
+            // Scroll to bottom
+            $log.scrollTop($log[0].scrollHeight);
+        }
+
+        function updateState() {
+            const values = $('#testDropdown').val();
+            const instance = $('#testDropdown').data('multiSelectDD');
+            const selectedItems = instance ? instance.getSelectedItems() : [];
+            
+            const output = {
+                selectedCount: values ? values.length : 0,
+                values: values || [],
+                items: selectedItems.map(item => ({ value: item.value, text: item.text }))
+            };
+            
+            $('#stateOutput').text(JSON.stringify(output, null, 2));
+        }
+
+        function applyConfig() {
+            const config = {
+                placeholder: $('#placeholder').val(),
+                search: $('#search').is(':checked'),
+                selectAll: $('#selectAll').is(':checked'),
+                listAll: $('#listAll').is(':checked'),
+                closeOnSelect: $('#closeOnSelect').is(':checked'),
+                allowClear: $('#allowClear').is(':checked'),
+                max: parseInt($('#maxItems').val()) || null,
+                min: parseInt($('#minItems').val()) || null,
+                onChange: function(value, text, item) {
+                    logEvent('CHANGE', `Value: ${value}, Text: ${text}, Selected: ${item.selected}`);
+                    updateState();
+                },
+                onSelect: function(value, text) {
+                    logEvent('SELECT', `${text} (${value})`);
+                },
+                onUnselect: function(value, text) {
+                    logEvent('UNSELECT', `${text} (${value})`);
+                },
+                onMaxReached: function(max) {
+                    logEvent('MAX_REACHED', `Maximum ${max} items allowed!`);
+                    alert(`Maximum ${max} items allowed!`);
+                }
+            };
+            
+            $('#testDropdown').multiSelectDD('destroy');
+            $('#testDropdown').multiSelectDD(config);
+            
+            logEvent('CONFIG', 'Configuration applied');
+            updateState();
+            updateConfigCode();
+        }
+
+        function resetConfig() {
+            $('#placeholder').val('Select item(s)');
+            $('#search').prop('checked', true);
+            $('#selectAll').prop('checked', true);
+            $('#listAll').prop('checked', false);
+            $('#closeOnSelect').prop('checked', false);
+            $('#allowClear').prop('checked', true);
+            $('#maxItems').val('0');
+            $('#minItems').val('0');
+            
+            applyConfig();
+            logEvent('CONFIG', 'Reset to defaults');
+        }
+
+        function testSelectAll() {
+            $('#testDropdown').multiSelectDD('selectAll');
+            logEvent('ACTION', 'Select All executed');
+        }
+
+        function testClear() {
+            $('#testDropdown').multiSelectDD('clear');
+            logEvent('ACTION', 'Clear All executed');
+        }
+
+        function testSetValues() {
+            const allValues = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15'];
+            const count = Math.floor(Math.random() * 5) + 1;
+            const randomValues = [];
+            
+            for (let i = 0; i < count; i++) {
+                const randomIndex = Math.floor(Math.random() * allValues.length);
+                randomValues.push(allValues[randomIndex]);
+            }
+            
+            $('#testDropdown').multiSelectDD('val', randomValues);
+            logEvent('ACTION', `Set random values: ${randomValues.join(', ')}`);
+        }
+
+        let isDisabled = false;
+        function testToggleDisable() {
+            isDisabled = !isDisabled;
+            if (isDisabled) {
+                $('#testDropdown').multiSelectDD('disable');
+                logEvent('ACTION', 'Dropdown disabled');
+            } else {
+                $('#testDropdown').multiSelectDD('enable');
+                logEvent('ACTION', 'Dropdown enabled');
+            }
+        }
+
+        let optionCounter = 16;
+        function testAddOption() {
+            const value = optionCounter.toString();
+            const text = `Dynamic Option ${optionCounter}`;
+            $('#testDropdown').multiSelectDD('addOption', value, text, false);
+            logEvent('ACTION', `Added option: ${text}`);
+            optionCounter++;
+        }
+
+        function testRemoveOption() {
+            const lastValue = (optionCounter - 1).toString();
+            $('#testDropdown').multiSelectDD('removeOption', lastValue);
+            logEvent('ACTION', `Removed option with value: ${lastValue}`);
+            if (optionCounter > 16) optionCounter--;
+        }
+
+        function testGetValues() {
+            const values = $('#testDropdown').val();
+            logEvent('ACTION', `Get values: ${JSON.stringify(values)}`);
+            alert('Current values: ' + JSON.stringify(values));
+        }
+
+        function testDestroy() {
+            if (confirm('Are you sure you want to destroy the dropdown?')) {
+                $('#testDropdown').multiSelectDD('destroy');
+                logEvent('ACTION', 'Dropdown destroyed');
+                setTimeout(() => {
+                    applyConfig();
+                    logEvent('ACTION', 'Dropdown re-initialized');
+                }, 1000);
+            }
+        }
+
+        function loadCountries() {
+            const countries = [
+                { value: 'us', text: 'United States', selected: false },
+                { value: 'uk', text: 'United Kingdom', selected: false },
+                { value: 'ca', text: 'Canada', selected: false },
+                { value: 'au', text: 'Australia', selected: false },
+                { value: 'de', text: 'Germany', selected: false },
+                { value: 'fr', text: 'France', selected: false },
+                { value: 'jp', text: 'Japan', selected: false },
+                { value: 'cn', text: 'China', selected: false },
+                { value: 'in', text: 'India', selected: false },
+                { value: 'br', text: 'Brazil', selected: false }
+            ];
+            
+            $('#testDropdown').multiSelectDD('destroy');
+            $('#testDropdown').empty();
+            $('#testDropdown').multiSelectDD({
+                data: countries,
+                placeholder: 'Select countries...',
+                onChange: function(value, text, item) {
+                    logEvent('CHANGE', `Value: ${value}, Text: ${text}, Selected: ${item.selected}`);
+                    updateState();
+                },
+                onSelect: function(value, text) {
+                    logEvent('SELECT', `${text} (${value})`);
+                },
+                onUnselect: function(value, text) {
+                    logEvent('UNSELECT', `${text} (${value})`);
+                }
+            });
+            
+            logEvent('DATA', 'Loaded countries dataset');
+            updateConfigCode();
+        }
+
+        function loadProducts() {
+            const products = [
+                { value: 'p1', text: 'Laptop', selected: false },
+                { value: 'p2', text: 'Mouse', selected: false },
+                { value: 'p3', text: 'Keyboard', selected: false },
+                { value: 'p4', text: 'Monitor', selected: false },
+                { value: 'p5', text: 'Headphones', selected: false },
+                { value: 'p6', text: 'Webcam', selected: false },
+                { value: 'p7', text: 'USB Cable', selected: false },
+                { value: 'p8', text: 'External HDD', selected: false }
+            ];
+            
+            $('#testDropdown').multiSelectDD('destroy');
+            $('#testDropdown').empty();
+            $('#testDropdown').multiSelectDD({
+                data: products,
+                placeholder: 'Select products...',
+                onChange: function(value, text, item) {
+                    logEvent('CHANGE', `Value: ${value}, Text: ${text}, Selected: ${item.selected}`);
+                    updateState();
+                },
+                onSelect: function(value, text) {
+                    logEvent('SELECT', `${text} (${value})`);
+                },
+                onUnselect: function(value, text) {
+                    logEvent('UNSELECT', `${text} (${value})`);
+                }
+            });
+            
+            logEvent('DATA', 'Loaded products dataset');
+            updateConfigCode();
+        }
+
+        function loadColors() {
+            const colors = [
+                { value: 'red', text: 'Red', selected: false },
+                { value: 'blue', text: 'Blue', selected: false },
+                { value: 'green', text: 'Green', selected: false },
+                { value: 'yellow', text: 'Yellow', selected: false },
+                { value: 'purple', text: 'Purple', selected: false },
+                { value: 'orange', text: 'Orange', selected: false },
+                { value: 'pink', text: 'Pink', selected: false },
+                { value: 'black', text: 'Black', selected: false },
+                { value: 'white', text: 'White', selected: false },
+                { value: 'gray', text: 'Gray', selected: false }
+            ];
+            
+            $('#testDropdown').multiSelectDD('destroy');
+            $('#testDropdown').empty();
+            $('#testDropdown').multiSelectDD({
+                data: colors,
+                placeholder: 'Select colors...',
+                onChange: function(value, text, item) {
+                    logEvent('CHANGE', `Value: ${value}, Text: ${text}, Selected: ${item.selected}`);
+                    updateState();
+                },
+                onSelect: function(value, text) {
+                    logEvent('SELECT', `${text} (${value})`);
+                },
+                onUnselect: function(value, text) {
+                    logEvent('UNSELECT', `${text} (${value})`);
+                }
+            });
+            
+            logEvent('DATA', 'Loaded colors dataset');
+            updateConfigCode();
+        }
+
+        function loadCustomData() {
+            try {
+                const data = JSON.parse($('#customData').val());
+                
+                if (!Array.isArray(data)) {
+                    throw new Error('Data must be an array');
+                }
+                
+                $('#testDropdown').multiSelectDD('destroy');
+                $('#testDropdown').empty();
+                $('#testDropdown').multiSelectDD({
+                    data: data,
+                    placeholder: 'Select items...',
+                    onChange: function(value, text, item) {
+                        logEvent('CHANGE', `Value: ${value}, Text: ${text}, Selected: ${item.selected}`);
+                        updateState();
+                    },
+                    onSelect: function(value, text) {
+                        logEvent('SELECT', `${text} (${value})`);
+                    },
+                    onUnselect: function(value, text) {
+                        logEvent('UNSELECT', `${text} (${value})`);
+                    }
+                });
+                
+                logEvent('DATA', `Loaded custom data (${data.length} items)`);
+                updateConfigCode();
+            } catch (error) {
+                alert('Invalid JSON data: ' + error.message);
+                logEvent('ERROR', 'Failed to load custom data: ' + error.message);
+            }
+        }
+
+        function updateConfigCode() {
+            const config = {
+                placeholder: $('#placeholder').val(),
+                search: $('#search').is(':checked'),
+                selectAll: $('#selectAll').is(':checked'),
+                listAll: $('#listAll').is(':checked'),
+                closeOnSelect: $('#closeOnSelect').is(':checked'),
+                allowClear: $('#allowClear').is(':checked'),
+                max: parseInt($('#maxItems').val()) || null,
+                min: parseInt($('#minItems').val()) || null
+            };
+            
+            // Remove default values to keep code clean
+            const cleanConfig = {};
+            if (config.placeholder !== 'Select item(s)') cleanConfig.placeholder = config.placeholder;
+            if (config.search !== true) cleanConfig.search = config.search;
+            if (config.selectAll !== true) cleanConfig.selectAll = config.selectAll;
+            if (config.listAll !== false) cleanConfig.listAll = config.listAll;
+            if (config.closeOnSelect !== false) cleanConfig.closeOnSelect = config.closeOnSelect;
+            if (config.allowClear !== true) cleanConfig.allowClear = config.allowClear;
+            if (config.max) cleanConfig.max = config.max;
+            if (config.min) cleanConfig.min = config.min;
+            
+            // Generate code
+            let code = `$('#testDropdown').multiSelectDD(`;
+            
+            if (Object.keys(cleanConfig).length === 0) {
+                code += `);`;
+            } else {
+                code += `{\n${JSON.stringify(cleanConfig, null, 4).slice(2, -2)}\n});`;
+            }
+            
+            $('#configCode').text(code);
+        }
+
+        function copyConfigCode() {
+            const code = $('#configCode').text();
+            
+            navigator.clipboard.writeText(code).then(() => {
+                alert('Code copied to clipboard!');
+                logEvent('CODE', 'Configuration code copied');
+            }).catch(err => {
+                alert('Failed to copy code');
+                console.error('Copy failed:', err);
+            });
+        }
+
+        // Initial setup
+        updateState();
+        updateConfigCode();
+        logEvent('INIT', 'Playground initialized');
+    </script>
+</body>
+</html>

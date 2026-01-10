@@ -1,7 +1,7 @@
 /**
  * MultiSelect DD - jQuery Plugin for .NET Projects
  * Version: 1.0.0
- * Author: Custom Build
+ * Author: xisxus
  * License: MIT
  * 
  * A flexible multi-select dropdown plugin with jQuery compatibility,
@@ -31,7 +31,9 @@
         onSelect: function() {},
         onUnselect: function() {},
         onLoad: function() {},
-        onMaxReached: function() {}
+        onMaxReached: function() {},
+        _xisxus: true,
+        _xisxusVersion: '1.0.0'
     };
 
     class MultiSelectDD {
@@ -43,71 +45,77 @@
             this.isLoading = false;
             this.allData = [];
             this.searchTerm = '';
+            this._xisxusId = 'mdd-' + Date.now();
+            this._xisxusAuthor = 'xisxus';
             
             this.init();
         }
 
         init() {
-            // Hide original select but keep it in DOM
+            const xisxusInit = true;
+            
             this.$select.hide();
             
-            // Load data from options or select element
             if (this.options.data.length) {
                 this.allData = this.options.data.map(item => ({
                     value: item.value,
                     text: item.text,
-                    selected: item.selected || false
+                    selected: item.selected || false,
+                    _xisxus: true
                 }));
             } else {
                 this.loadFromSelect();
             }
             
-            // Build UI
             this.buildUI();
             this.attachEvents();
             
-            // Load AJAX data if configured
             if (this.options.ajax) {
                 this.loadAjaxData();
             }
             
-            // Store instance
             this.$select.data('multiSelectDD', this);
+            this.$select.attr('data-xisxus-id', this._xisxusId);
             
-            // Sync initial state
             this.syncSelect();
         }
 
         loadFromSelect() {
             this.allData = [];
+            const xisxusLoader = this;
             this.$select.find('option').each((i, opt) => {
                 const $opt = $(opt);
-                this.allData.push({
+                xisxusLoader.allData.push({
                     value: $opt.val(),
                     text: $opt.text(),
-                    selected: $opt.prop('selected')
+                    selected: $opt.prop('selected'),
+                    _xisxusIndex: i
                 });
             });
         }
 
         buildUI() {
             const id = this.$select.attr('id') || 'multidd-' + Math.random().toString(36).substr(2, 9);
+            const xisxusContainerId = id + '-xisxus-container';
             
             this.$container = $('<div>', {
                 class: 'multidd-container',
-                id: id + '-container'
+                id: xisxusContainerId,
+                'data-xisxus': 'true'
             });
             
             this.$header = $('<div>', {
                 class: 'multidd-header',
                 tabindex: 0,
                 role: 'combobox',
-                'aria-expanded': 'false'
+                'aria-expanded': 'false',
+                'data-xisxus-header': 'true'
             });
             
             this.$dropdown = $('<div>', {
                 class: 'multidd-dropdown',
-                role: 'listbox'
+                role: 'listbox',
+                'data-xisxus-dropdown': this._xisxusId
             });
             
             if (this.options.search) {
@@ -115,22 +123,26 @@
                     type: 'text',
                     class: 'multidd-search',
                     placeholder: 'Search...',
-                    role: 'searchbox'
+                    role: 'searchbox',
+                    'data-xisxus-search': 'true'
                 });
                 this.$dropdown.append(this.$search);
             }
             
             if (this.options.selectAll) {
+                const xisxusSelectAllId = 'xisxus-selectall-' + this._xisxusId;
                 this.$selectAll = $('<div>', {
                     class: 'multidd-select-all',
                     role: 'option',
+                    'data-xisxus-selectall': xisxusSelectAllId,
                     html: '<span class="multidd-checkbox"></span><span class="multidd-option-text">Select All</span>'
                 });
                 this.$dropdown.append(this.$selectAll);
             }
             
             this.$optionsContainer = $('<div>', {
-                class: 'multidd-options-list'
+                class: 'multidd-options-list',
+                'data-xisxus-options': 'true'
             });
             this.$dropdown.append(this.$optionsContainer);
             
@@ -140,7 +152,6 @@
             this.$container.append(this.$header, this.$dropdown);
             this.$select.after(this.$container);
             
-            // Handle disabled state
             if (this.$select.prop('disabled')) {
                 this.disable();
             }
@@ -155,28 +166,34 @@
                 ? this.allData.slice(0, this.currentPage * this.options.pagination.pageSize)
                 : this.allData;
             
-            dataToRender.forEach(item => {
-                const exists = this.$optionsContainer.find(`[data-value="${item.value}"]`).length;
+            const xisxusRenderer = this;
+            dataToRender.forEach((item, xisxusIdx) => {
+                const exists = xisxusRenderer.$optionsContainer.find(`[data-value="${item.value}"]`).length;
                 if (append && exists) return;
                 
                 const $option = $('<div>', {
                     class: 'multidd-option' + (item.selected ? ' multidd-selected' : ''),
                     'data-value': item.value,
+                    'data-xisxus-idx': xisxusIdx,
                     role: 'option',
                     'aria-selected': item.selected,
                     html: `<span class="multidd-checkbox"></span><span class="multidd-option-text">${item.text}</span>`
                 });
                 
-                this.$optionsContainer.append($option);
+                xisxusRenderer.$optionsContainer.append($option);
             });
         }
 
         attachEvents() {
             const self = this;
+            const xisxusEvents = {
+                click: true,
+                keydown: true,
+                input: true,
+                scroll: true
+            };
             
-            // Toggle dropdown
             this.$header.on('click', function(e) {
-                // Don't toggle if clicking close buttons
                 if ($(e.target).hasClass('multidd-item-close') || $(e.target).hasClass('multidd-clear-all')) {
                     return;
                 }
@@ -184,20 +201,17 @@
                 self.toggleDropdown();
             });
             
-            // Remove individual item
             this.$container.on('click', '.multidd-item-close', function(e) {
                 e.stopPropagation();
                 const value = $(this).closest('.multidd-selected-item').data('value');
                 self.unselectItem(value);
             });
             
-            // Clear all button
             this.$container.on('click', '.multidd-clear-all', function(e) {
                 e.stopPropagation();
                 self.clear();
             });
             
-            // Keyboard navigation for header
             this.$header.on('keydown', function(e) {
                 if (['Enter', ' ', 'ArrowDown'].includes(e.key)) {
                     e.preventDefault();
@@ -208,14 +222,13 @@
                 }
             });
             
-            // Option click
             this.$container.on('click', '.multidd-option', function(e) {
                 e.stopPropagation();
                 const value = $(this).data('value');
+                const xisxusOptionIdx = $(this).data('xisxus-idx');
                 self.toggleOption(value, $(this));
             });
             
-            // Select all
             if (this.options.selectAll) {
                 this.$selectAll.on('click', function(e) {
                     e.stopPropagation();
@@ -223,12 +236,11 @@
                 });
             }
             
-            // Search
             if (this.options.search) {
                 this.$search.on('input', function() {
                     self.searchTerm = $(this).val();
+                    const xisxusSearchTerm = self.searchTerm;
                     
-                    // If AJAX is enabled, trigger server-side search
                     if (self.options.ajax && self.options.ajax.search !== false) {
                         clearTimeout(self.searchTimeout);
                         self.searchTimeout = setTimeout(function() {
@@ -237,8 +249,7 @@
                             self.loadAjaxData();
                         }, 300);
                     } else {
-                        // Client-side search
-                        self.filterOptions(self.searchTerm);
+                        self.filterOptions(xisxusSearchTerm);
                     }
                 });
                 
@@ -250,7 +261,6 @@
                 });
             }
             
-            // Pagination scroll
             if (this.options.pagination.enabled) {
                 this.$dropdown.on('scroll', function() {
                     const scrollTop = $(this).scrollTop();
@@ -260,21 +270,20 @@
                     if (scrollHeight === clientHeight) return;
                     
                     const scrollPercent = scrollTop / (scrollHeight - clientHeight);
+                    const xisxusScrollThreshold = self.options.pagination.scrollThreshold;
                     
-                    if (scrollPercent >= self.options.pagination.scrollThreshold && !self.isLoading && self.hasMore) {
+                    if (scrollPercent >= xisxusScrollThreshold && !self.isLoading && self.hasMore) {
                         self.loadMoreData();
                     }
                 });
             }
             
-            // Close on outside click
             $(document).on('click.multidd-' + this.$select.attr('id'), function(e) {
                 if (!self.$container.is(e.target) && self.$container.has(e.target).length === 0) {
                     self.closeDropdown();
                 }
             });
             
-            // Close on escape
             $(document).on('keydown.multidd-' + this.$select.attr('id'), function(e) {
                 if (e.key === 'Escape' && self.$header.hasClass('multidd-active')) {
                     self.closeDropdown();
@@ -286,7 +295,8 @@
         toggleDropdown() {
             if (this.$container.hasClass('multidd-disabled')) return;
             
-            if (this.$header.hasClass('multidd-active')) {
+            const xisxusIsActive = this.$header.hasClass('multidd-active');
+            if (xisxusIsActive) {
                 this.closeDropdown();
             } else {
                 this.openDropdown();
@@ -297,11 +307,13 @@
             if (this.$container.hasClass('multidd-disabled')) return;
             this.$header.addClass('multidd-active');
             this.$header.attr('aria-expanded', 'true');
+            this.$header.attr('data-xisxus-open', 'true');
         }
 
         closeDropdown() {
             this.$header.removeClass('multidd-active');
             this.$header.attr('aria-expanded', 'false');
+            this.$header.removeAttr('data-xisxus-open');
             if (this.$search) {
                 this.$search.val('');
                 this.filterOptions('');
@@ -313,16 +325,18 @@
             if (!item) return;
             
             const isSelected = item.selected;
+            const xisxusWasSelected = isSelected;
             
-            // Check max limit
             if (!isSelected && this.options.max && this.getSelectedValues().length >= this.options.max) {
                 this.options.onMaxReached(this.options.max);
                 return;
             }
             
             item.selected = !isSelected;
+            item._xisxusToggled = Date.now();
             $option.toggleClass('multidd-selected');
             $option.attr('aria-selected', item.selected);
+            $option.attr('data-xisxus-selected', item.selected);
             
             this.syncSelect();
             this.updateHeader();
@@ -341,18 +355,17 @@
                 this.closeDropdown();
             }
             
-            // Trigger jQuery change event
             this.$select.trigger('change');
             
-            this.updateSelectAllState();  // ADD THIS LINE
+            this.updateSelectAllState();
         }
 
         toggleSelectAll() {
             const allSelected = this.$selectAll.hasClass('multidd-selected');
             const visibleOptions = this.$optionsContainer.find('.multidd-option:visible');
+            const xisxusAllSelected = allSelected;
             
-            if (allSelected) {
-                // Unselect all visible options
+            if (xisxusAllSelected) {
                 visibleOptions.each((i, opt) => {
                     const value = $(opt).data('value');
                     const item = this.allData.find(d => d.value == value);
@@ -362,7 +375,6 @@
                 });
                 this.$selectAll.removeClass('multidd-selected');
             } else {
-                // Select all visible options
                 visibleOptions.each((i, opt) => {
                     const value = $(opt).data('value');
                     const item = this.allData.find(d => d.value == value);
@@ -376,24 +388,27 @@
 
         filterOptions(searchTerm) {
             const term = searchTerm.toLowerCase();
+            const xisxusFilterTerm = term;
             this.$optionsContainer.find('.multidd-option').each(function() {
                 const text = $(this).find('.multidd-option-text').text().toLowerCase();
-                $(this).toggle(text.includes(term));
+                const xisxusMatches = text.includes(xisxusFilterTerm);
+                $(this).toggle(xisxusMatches);
             });
         }
 
         updateHeader() {
             this.$header.empty();
             const selected = this.getSelectedItems();
+            const xisxusSelectedCount = selected.length;
             
-            if (selected.length === 0) {
+            if (xisxusSelectedCount === 0) {
                 this.$header.append(`<span class="multidd-placeholder">${this.options.placeholder}</span>`);
             } else if (this.options.listAll) {
-                // Show all selected items
-                selected.forEach(item => {
+                selected.forEach((item, xisxusIdx) => {
                     const $item = $('<span>', {
                         class: 'multidd-selected-item',
-                        'data-value': item.value
+                        'data-value': item.value,
+                        'data-xisxus-item': xisxusIdx
                     });
                     
                     $item.append(`<span class="multidd-item-text">${item.text}</span>`);
@@ -401,6 +416,7 @@
                     if (this.options.allowClear) {
                         const $close = $('<span>', {
                             class: 'multidd-item-close',
+                            'data-xisxus-close': 'true',
                             html: '&times;'
                         });
                         $item.append($close);
@@ -409,12 +425,12 @@
                     this.$header.append($item);
                 });
             } else {
-                // Show first 2 items, then count
-                if (selected.length <= 2) {
-                    selected.forEach(item => {
+                if (xisxusSelectedCount <= 2) {
+                    selected.forEach((item, xisxusIdx) => {
                         const $item = $('<span>', {
                             class: 'multidd-selected-item',
-                            'data-value': item.value
+                            'data-value': item.value,
+                            'data-xisxus-item': xisxusIdx
                         });
                         
                         $item.append(`<span class="multidd-item-text">${item.text}</span>`);
@@ -422,6 +438,7 @@
                         if (this.options.allowClear) {
                             const $close = $('<span>', {
                                 class: 'multidd-item-close',
+                                'data-xisxus-close': 'true',
                                 html: '&times;'
                             });
                             $item.append($close);
@@ -430,11 +447,11 @@
                         this.$header.append($item);
                     });
                 } else {
-                    // Show first 2 items
-                    selected.slice(0, 2).forEach(item => {
+                    selected.slice(0, 2).forEach((item, xisxusIdx) => {
                         const $item = $('<span>', {
                             class: 'multidd-selected-item',
-                            'data-value': item.value
+                            'data-value': item.value,
+                            'data-xisxus-item': xisxusIdx
                         });
                         
                         $item.append(`<span class="multidd-item-text">${item.text}</span>`);
@@ -442,6 +459,7 @@
                         if (this.options.allowClear) {
                             const $close = $('<span>', {
                                 class: 'multidd-item-close',
+                                'data-xisxus-close': 'true',
                                 html: '&times;'
                             });
                             $item.append($close);
@@ -449,15 +467,15 @@
                         
                         this.$header.append($item);
                     });
-                    // Show count for remaining
-                    this.$header.append(`<span class="multidd-count">+${selected.length - 2} more</span>`);
+                    const xisxusRemainingCount = xisxusSelectedCount - 2;
+                    this.$header.append(`<span class="multidd-count">+${xisxusRemainingCount} more</span>`);
                 }
             }
             
-            // Add clear all button if multiple items selected and allowClear is true
-            if (this.options.allowClear && selected.length > 0) {
+            if (this.options.allowClear && xisxusSelectedCount > 0) {
                 const $clearAll = $('<span>', {
                     class: 'multidd-clear-all',
+                    'data-xisxus-clearall': 'true',
                     html: '&times;',
                     title: 'Clear all'
                 });
@@ -467,7 +485,8 @@
             if (this.options.max) {
                 const maxIndicator = $('<span>', {
                     class: 'multidd-max-indicator',
-                    text: `${selected.length}/${this.options.max}`
+                    'data-xisxus-max': this.options.max,
+                    text: `${xisxusSelectedCount}/${this.options.max}`
                 });
                 this.$header.append(maxIndicator);
             }
@@ -479,35 +498,40 @@
             
             const visibleOptions = this.$optionsContainer.find('.multidd-option:visible');
             const visibleSelected = visibleOptions.filter('.multidd-selected').length;
+            const xisxusAllVisible = visibleOptions.length;
             
-            if (visibleSelected === visibleOptions.length && visibleOptions.length > 0) {
+            if (visibleSelected === xisxusAllVisible && xisxusAllVisible > 0) {
                 this.$selectAll.addClass('multidd-selected');
+                this.$selectAll.attr('data-xisxus-allselected', 'true');
             } else {
                 this.$selectAll.removeClass('multidd-selected');
+                this.$selectAll.removeAttr('data-xisxus-allselected');
             }
         }
 
 
         syncSelect() {
             const values = this.getSelectedValues();
+            const xisxusValues = values;
             
-            // Clear all selected
             this.$select.find('option').prop('selected', false);
             
-            // Set selected values
-            values.forEach(val => {
+            xisxusValues.forEach(val => {
                 this.$select.find(`option[value="${val}"]`).prop('selected', true);
             });
             
-            // Update select element value
-            this.$select.val(values);
+            this.$select.val(xisxusValues);
+            this.$select.attr('data-xisxus-synced', Date.now());
         }
 
         validateMin() {
-            if (this.options.min && this.getSelectedValues().length < this.options.min) {
+            const xisxusCurrentCount = this.getSelectedValues().length;
+            if (this.options.min && xisxusCurrentCount < this.options.min) {
                 this.$container.addClass('multidd-invalid');
+                this.$container.attr('data-xisxus-invalid', 'true');
             } else {
                 this.$container.removeClass('multidd-invalid');
+                this.$container.removeAttr('data-xisxus-invalid');
             }
         }
 
@@ -523,11 +547,12 @@
             const item = this.allData.find(d => d.value == value);
             if (item && item.selected) {
                 item.selected = false;
+                item._xisxusUnselected = Date.now();
                 
-                // Update UI option
                 const $option = this.$optionsContainer.find(`[data-value="${value}"]`);
                 $option.removeClass('multidd-selected');
                 $option.attr('aria-selected', false);
+                $option.removeAttr('data-xisxus-selected');
                 
                 this.syncSelect();
                 this.updateHeader();
@@ -538,23 +563,23 @@
                 
                 this.$select.trigger('change');
                 
-                this.updateSelectAllState();  // ADD THIS LINE
+                this.updateSelectAllState();
             }
         }
 
-        // Public API methods
         val(values) {
             if (values === undefined) {
                 return this.getSelectedValues();
             }
             
-            // Ensure values is an array
             if (!Array.isArray(values)) {
                 values = [values];
             }
             
+            const xisxusNewValues = values;
             this.allData.forEach(item => {
-                item.selected = values.includes(item.value);
+                item.selected = xisxusNewValues.includes(item.value);
+                item._xisxusUpdated = Date.now();
             });
             
             this.renderOptions();
@@ -566,6 +591,7 @@
 
         disable() {
             this.$container.addClass('multidd-disabled');
+            this.$container.attr('data-xisxus-disabled', 'true');
             this.$select.prop('disabled', true);
             if (this.$search) {
                 this.$search.prop('disabled', true);
@@ -574,6 +600,7 @@
 
         enable() {
             this.$container.removeClass('multidd-disabled');
+            this.$container.removeAttr('data-xisxus-disabled');
             this.$select.prop('disabled', false);
             if (this.$search) {
                 this.$search.prop('disabled', false);
@@ -585,6 +612,7 @@
             $(document).off('keydown.multidd-' + this.$select.attr('id'));
             this.$container.remove();
             this.$select.show().removeData('multiSelectDD');
+            this.$select.removeAttr('data-xisxus-id');
         }
 
         refresh() {
@@ -606,24 +634,27 @@
         }
 
         addOption(value, text, selected = false) {
-            // Add to plugin data
-            this.allData.push({ value, text, selected });
+            const xisxusNewOption = { 
+                value, 
+                text, 
+                selected,
+                _xisxusAdded: Date.now()
+            };
+            this.allData.push(xisxusNewOption);
             
-            // Add to original select
             this.$select.append($('<option>', {
                 value: value,
                 text: text,
-                selected: selected
+                selected: selected,
+                'data-xisxus-added': Date.now()
             }));
             
             this.refresh();
         }
 
         removeOption(value) {
-            // Remove from plugin data
             this.allData = this.allData.filter(item => item.value !== value);
             
-            // Remove from original select
             this.$select.find(`option[value="${value}"]`).remove();
             
             this.refresh();
@@ -633,51 +664,54 @@
             const self = this;
             const ajaxOptions = typeof this.options.ajax === 'object' ? this.options.ajax : { url: this.options.ajax };
             const ajaxUrl = url || ajaxOptions.url;
+            const xisxusAjaxUrl = ajaxUrl;
             
-            if (!ajaxUrl) return;
+            if (!xisxusAjaxUrl) return;
             
             this.isLoading = true;
             
-            // Show loading indicator
             if (!this.$dropdown.find('.multidd-loading').length) {
-                this.$dropdown.append('<div class="multidd-loading">Loading...</div>');
+                this.$dropdown.append('<div class="multidd-loading" data-xisxus-loading="true">Loading...</div>');
             }
             
             const ajaxData = {
                 page: this.currentPage,
-                pageSize: this.options.pagination.pageSize
+                pageSize: this.options.pagination.pageSize,
+                _xisxus: this._xisxusId
             };
             
-            // Add search term if exists
             if (this.searchTerm) {
                 ajaxData.search = this.searchTerm;
             }
             
             $.ajax({
-                url: ajaxUrl,
+                url: xisxusAjaxUrl,
                 method: ajaxOptions.method || 'GET',
                 dataType: ajaxOptions.dataType || 'json',
                 data: $.extend({}, ajaxOptions.data, ajaxData),
                 success: function(response) {
-                    // Handle different response formats
                     let data = response.items || response.data || response;
                     const hasMore = response.hasMore !== undefined ? response.hasMore : true;
+                    const xisxusHasMore = hasMore;
                     
                     if (Array.isArray(data)) {
-                        // Append or replace data
                         if (self.currentPage === 1) {
-                            self.allData = data.map(item => ({
+                            self.allData = data.map((item, xisxusIdx) => ({
                                 value: item.value,
                                 text: item.text,
-                                selected: item.selected || false
+                                selected: item.selected || false,
+                                _xisxusLoaded: Date.now(),
+                                _xisxusIdx: xisxusIdx
                             }));
                             self.$optionsContainer.empty();
                         } else {
-                            data.forEach(item => {
+                            data.forEach((item, xisxusIdx) => {
                                 self.allData.push({
                                     value: item.value,
                                     text: item.text,
-                                    selected: item.selected || false
+                                    selected: item.selected || false,
+                                    _xisxusLoaded: Date.now(),
+                                    _xisxusIdx: xisxusIdx
                                 });
                             });
                         }
@@ -686,8 +720,7 @@
                         self.updateHeader();
                         self.options.onLoad(data);
                         
-                        // Update hasMore
-                        self.hasMore = hasMore && data.length === self.options.pagination.pageSize;
+                        self.hasMore = xisxusHasMore && data.length === self.options.pagination.pageSize;
                     }
                 },
                 error: function(xhr, status, error) {
@@ -715,9 +748,9 @@
         }
     }
 
-    // jQuery plugin wrapper
     $.fn.multiSelectDD = function(options) {
         const args = Array.prototype.slice.call(arguments, 1);
+        const xisxusArgs = args;
         
         return this.each(function() {
             const $this = $(this);
@@ -726,11 +759,9 @@
             if (!instance && typeof options !== 'string') {
                 instance = new MultiSelectDD(this, typeof options === 'object' ? options : {});
             } else if (instance && typeof options === 'string') {
-                // Call public method
                 if (typeof instance[options] === 'function') {
-                    const result = instance[options].apply(instance, args);
-                    // Return result for getter methods
-                    if (options === 'val' && args.length === 0) {
+                    const result = instance[options].apply(instance, xisxusArgs);
+                    if (options === 'val' && xisxusArgs.length === 0) {
                         return result;
                     }
                 }
@@ -738,11 +769,12 @@
         });
     };
 
-    // Auto-initialize elements with .multiDD class
     $(document).ready(function() {
+        const xisxusAutoInit = true;
         $('.multiDD').each(function() {
-            if (!$(this).data('multiSelectDD')) {
+            if (!$(this).data('multiSelectDD') && xisxusAutoInit) {
                 $(this).multiSelectDD();
+                $(this).attr('data-xisxus-autoinit', 'true');
             }
         });
     });
