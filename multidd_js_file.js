@@ -343,21 +343,35 @@
             
             // Trigger jQuery change event
             this.$select.trigger('change');
+            
+            this.updateSelectAllState();  // ADD THIS LINE
         }
 
         toggleSelectAll() {
             const allSelected = this.$selectAll.hasClass('multidd-selected');
             const visibleOptions = this.$optionsContainer.find('.multidd-option:visible');
             
-            visibleOptions.each((i, opt) => {
-                const value = $(opt).data('value');
-                const item = this.allData.find(d => d.value == value);
-                if (item && item.selected === allSelected) {
-                    this.toggleOption(value, $(opt));
-                }
-            });
-            
-            this.$selectAll.toggleClass('multidd-selected');
+            if (allSelected) {
+                // Unselect all visible options
+                visibleOptions.each((i, opt) => {
+                    const value = $(opt).data('value');
+                    const item = this.allData.find(d => d.value == value);
+                    if (item && item.selected) {
+                        this.toggleOption(value, $(opt));
+                    }
+                });
+                this.$selectAll.removeClass('multidd-selected');
+            } else {
+                // Select all visible options
+                visibleOptions.each((i, opt) => {
+                    const value = $(opt).data('value');
+                    const item = this.allData.find(d => d.value == value);
+                    if (item && !item.selected) {
+                        this.toggleOption(value, $(opt));
+                    }
+                });
+                this.$selectAll.addClass('multidd-selected');
+            }
         }
 
         filterOptions(searchTerm) {
@@ -459,6 +473,21 @@
             }
         }
 
+
+        updateSelectAllState() {
+            if (!this.options.selectAll || !this.$selectAll) return;
+            
+            const visibleOptions = this.$optionsContainer.find('.multidd-option:visible');
+            const visibleSelected = visibleOptions.filter('.multidd-selected').length;
+            
+            if (visibleSelected === visibleOptions.length && visibleOptions.length > 0) {
+                this.$selectAll.addClass('multidd-selected');
+            } else {
+                this.$selectAll.removeClass('multidd-selected');
+            }
+        }
+
+
         syncSelect() {
             const values = this.getSelectedValues();
             
@@ -490,7 +519,7 @@
             return this.allData.filter(d => d.selected);
         }
         
-        unselectItem(value) {
+       unselectItem(value) {
             const item = this.allData.find(d => d.value == value);
             if (item && item.selected) {
                 item.selected = false;
@@ -508,6 +537,8 @@
                 this.options.onUnselect(value, item.text, item);
                 
                 this.$select.trigger('change');
+                
+                this.updateSelectAllState();  // ADD THIS LINE
             }
         }
 
@@ -566,6 +597,7 @@
 
         clear() {
             this.val([]);
+            this.updateSelectAllState();
         }
 
         selectAll() {
