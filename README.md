@@ -779,6 +779,12 @@ function updateCart() {
 
 ---
 
+## PlayGround
+
+```javascript
+https://xisxus.github.io/MultiSelectDD-Document/
+```
+
 ## License
 
 MIT License - Feel free to use in personal and commercial projects.
