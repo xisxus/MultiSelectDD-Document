@@ -16,6 +16,7 @@
         search: true,
         selectAll: true,
         listAll: false,
+        countOnly: false,
         closeOnSelect: false,
         allowClear: true,
         max: null,
@@ -424,7 +425,12 @@
                     
                     this.$header.append($item);
                 });
-            } else {
+            } else if (this.options.countOnly) {
+                // ← ADD THIS NEW BLOCK
+                this.$header.append(
+                    `<span class="multidd-count">${selected.length} item(s) selected</span>`
+                );
+            }  else {
                 if (xisxusSelectedCount <= 2) {
                     selected.forEach((item, xisxusIdx) => {
                         const $item = $('<span>', {
