@@ -117,6 +117,7 @@ $('.my-selects').multiSelectDD({
 | `search` | boolean | `true` | Enable/disable search box |
 | `selectAll` | boolean | `true` | Show "Select All" option |
 | `listAll` | boolean | `false` | Show all selected items in header (if false, shows first 2 items, then count) |
+| `countOnly` | boolean | `false` | Show only count |
 | `closeOnSelect` | boolean | `false` | Close dropdown after selecting an item |
 | `allowClear` | boolean | `true` | Show close (×) button on selected items and clear all button |
 | `max` | number/null | `null` | Maximum number of selections allowed |
