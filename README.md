@@ -358,6 +358,127 @@ $('#mySelect').multiSelectDD({
 });
 ```
 
+
+### Example: AJAX Pagination with Preselected Values (Edit Form)
+
+**The problem:** With pagination, selected employees may be on page 2+
+and won't appear checked unless handled server-side.
+
+**Solution:** Pull selected employees to page 1, exclude them from subsequent pages.
+
+**JavaScript — reusable init function:**
+```javascript
+function initSecurityEmployees(selectedIds) {
+    if (selectedIds !== undefined && selectedIds !== null) {
+        if (!Array.isArray(selectedIds)) selectedIds = [selectedIds];
+    }
+
+    $('#SecurityEmployeeId').multiSelectDD('destroy');
+    $('#SecurityEmployeeId').multiSelectDD({
+        selectAll: false,
+        countOnly: true,
+        ajax: {
+            url: '/SecurityTeams/SearchEmployeesAD',
+            data: selectedIds && selectedIds.length ? { selectedIds: selectedIds.join(',') } : {}
+        },
+        pagination: { enabled: true, pageSize: 50, scrollThreshold: 0.8 }
+    });
+}
+
+// On page load
+initSecurityEmployees();
+
+// On edit
+initSecurityEmployees(data.securityEmployeeIds);
+```
+
+**Controller:**
+```csharp
+public async Task<IActionResult> SearchEmployeesAD(string search, int page = 1,
+                                                    int pageSize = 50, string selectedIds = "")
+{
+    var ids = string.IsNullOrEmpty(selectedIds) ? new List<int>()
+              : selectedIds.Split(',').Select(int.Parse).ToList();
+
+    var data = await commonService.SearchMultiEmployees(search, page, pageSize, ids);
+    return Json(data);
+}
+```
+
+**Service:**
+```csharp
+public async Task<MultiResult<MultiSelectVM>> SearchMultiEmployees(string search,
+                                                int page = 1, int pageSize = 50,
+                                                List<int> selectedIds = null)
+{
+    selectedIds ??= new List<int>();
+    var query = _employees.AllActive().AsNoTracking();
+
+    if (!string.IsNullOrWhiteSpace(search))
+    {
+        var pattern = $"%{search}%";
+        query = query.Where(e =>
+                      EF.Functions.Like(e.FirstName + " " + e.LastName, pattern) ||
+                      EF.Functions.Like(e.MobileNumber, pattern) ||
+                      EF.Functions.Like(e.Email, pattern));
+    }
+
+    var totalCount = await query.CountAsync();
+    List<MultiSelectVM> items;
+
+    if (page == 1 && selectedIds.Any())
+    {
+        var selected = await query
+            .Where(x => selectedIds.Contains(x.EmployeeID))
+            .Select(x => new MultiSelectVM { Value = x.EmployeeID, Text = x.DisplayName, Selected = true })
+            .ToListAsync();
+
+        var rest = await query
+            .Where(x => !selectedIds.Contains(x.EmployeeID))
+            .OrderBy(x => x.EmployeeID)
+            .Take(pageSize - selected.Count)
+            .Select(x => new MultiSelectVM { Value = x.EmployeeID, Text = x.DisplayName, Selected = false })
+            .ToListAsync();
+
+        items = selected.Concat(rest).ToList();
+    }
+    else
+    {
+        items = await query
+            .Where(x => !selectedIds.Contains(x.EmployeeID))
+            .OrderBy(x => x.EmployeeID)
+            .Skip(page == 1 ? 0 : (((page - 1) * pageSize) - selectedIds.Count))
+            .Take(pageSize)
+            .Select(x => new MultiSelectVM { Value = x.EmployeeID, Text = x.DisplayName, Selected = false })
+            .ToListAsync();
+    }
+
+    return new MultiResult<MultiSelectVM> { Items = items, HasMore = (page * pageSize) < totalCount, TotalCount = totalCount };
+}
+```
+
+**ViewModel:**
+```csharp
+
+public class MultiResult<T>
+{
+    public List<T> Items { get; set; }
+    public bool HasMore { get; set; }
+    public int TotalCount { get; set; }
+}
+
+public class MultiSelectVM
+{
+    public int Value { get; set; }
+    public string Text { get; set; }
+    public bool Selected { get; set; }
+}
+```
+
+> Make sure your JSON serializer uses camelCase so the plugin receives
+> `value`, `text`, `selected` (lowercase).
+
+
 ### Enable/Disable
 
 ```javascript
