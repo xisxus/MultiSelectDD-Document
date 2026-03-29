@@ -520,6 +520,17 @@
             const values = this.getSelectedValues();
             const xisxusValues = values;
             
+            // For AJAX/data-loaded options, ensure <option> tags exist in the <select>
+            // so ASP.NET MVC model binding picks them up on form submit
+            this.allData.forEach(item => {
+                if (!this.$select.find(`option[value="${item.value}"]`).length) {
+                    this.$select.append($('<option>', {
+                        value: item.value,
+                        text: item.text
+                    }));
+                }
+            });
+
             this.$select.find('option').prop('selected', false);
             
             xisxusValues.forEach(val => {
@@ -581,10 +592,18 @@
             if (!Array.isArray(values)) {
                 values = [values];
             }
-            
-            const xisxusNewValues = values;
+
+            // Convert all to strings for reliable comparison
+            const xisxusNewValues = values.map(String);
+
+            // If AJAX is configured and data isn't loaded yet, store for later
+            if (this.options.ajax && this.allData.length === 0) {
+                this._pendingValues = xisxusNewValues;
+                return;
+            }
+
             this.allData.forEach(item => {
-                item.selected = xisxusNewValues.includes(item.value);
+                item.selected = xisxusNewValues.includes(String(item.value));
                 item._xisxusUpdated = Date.now();
             });
             
@@ -702,13 +721,16 @@
                     
                     if (Array.isArray(data)) {
                         if (self.currentPage === 1) {
+                            // Preserve any values already set before AJAX returned
+                            const pendingValues = self._pendingValues || self.getSelectedValues();
                             self.allData = data.map((item, xisxusIdx) => ({
                                 value: item.value,
                                 text: item.text,
-                                selected: item.selected || false,
+                                selected: item.selected || pendingValues.includes(item.value) || pendingValues.includes(String(item.value)),
                                 _xisxusLoaded: Date.now(),
                                 _xisxusIdx: xisxusIdx
                             }));
+                            self._pendingValues = null;
                             self.$optionsContainer.empty();
                         } else {
                             data.forEach((item, xisxusIdx) => {
@@ -758,6 +780,16 @@
         const args = Array.prototype.slice.call(arguments, 1);
         const xisxusArgs = args;
         
+        // For getter methods, return the value directly (not the jQuery chain)
+        if (typeof options === 'string' && (options === 'val' || options === 'getSelectedValues' || options === 'getSelectedItems') && xisxusArgs.length === 0) {
+            const $this = $(this.get(0));
+            const instance = $this.data('multiSelectDD');
+            if (instance && typeof instance[options] === 'function') {
+                return instance[options].apply(instance, xisxusArgs);
+            }
+            return options === 'getSelectedItems' ? [] : [];
+        }
+
         return this.each(function() {
             const $this = $(this);
             let instance = $this.data('multiSelectDD');
@@ -766,14 +798,27 @@
                 instance = new MultiSelectDD(this, typeof options === 'object' ? options : {});
             } else if (instance && typeof options === 'string') {
                 if (typeof instance[options] === 'function') {
-                    const result = instance[options].apply(instance, xisxusArgs);
-                    if (options === 'val' && xisxusArgs.length === 0) {
-                        return result;
-                    }
+                    instance[options].apply(instance, xisxusArgs);
                 }
             }
         });
     };
+
+
+    $.fn.valDD = function(values) {
+        const instance = $(this).data('multiSelectDD');
+        if (!instance) return values === undefined ? [] : this;
+
+        if (values === undefined) {
+            return instance.getSelectedValues();
+        }
+
+        if (!Array.isArray(values)) values = [values];
+        instance.val(values.map(String));
+        return this;
+    };
+
+
 
     $(document).ready(function() {
         const xisxusAutoInit = true;

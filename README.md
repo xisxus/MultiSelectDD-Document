@@ -20,6 +20,7 @@ Dependencies: jQuery 3.x+
 10. [Styling & Customization](#styling--customization)
 11. [Accessibility](#accessibility)
 12. [Browser Support](#browser-support)
+13. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -160,84 +161,249 @@ $('.my-selects').multiSelectDD({
 ### Get/Set Values
 
 ```javascript
-// Get selected values
+// Get selected values (standard jQuery on the <select>)
 var values = $('#mySelect').val();
 // Returns: ['value1', 'value2']
 
-// Set selected values
-$('#mySelect').val(['value1', 'value2']);
-
-// Using plugin method
+// Set selected values (static data)
 $('#mySelect').multiSelectDD('val', ['value1', 'value2']);
+```
+
+### valDD() — Shorthand Get/Set (Recommended)
+
+The easiest way to get or set values:
+```javascript
+// Get selected values
+$('#mySelect').valDD()           // → ['1', '3', '5']
+
+// Set single value
+$('#mySelect').valDD(1)
+
+// Set multiple values
+$('#mySelect').valDD([1, 3, 5])
+```
+
+Works with static data, AJAX, and pagination.
+Add the `valDD` code to the bottom of `multidd_js_file.js` before the closing `})(jQuery);`.
+
+
+### Getting Values (Reliable Method)
+
+The standard `.val()` through the jQuery chain has a known limitation with this plugin.
+Use the instance directly for guaranteed results:
+
+```javascript
+// Most reliable — access instance directly
+var instance = $('#mySelect').data('multiSelectDD');
+var values = instance.getSelectedValues();  // ['1', '3', '5']
+var items  = instance.getSelectedItems();   // [{ value, text, selected }, ...]
+```
+
+> After applying the val() getter fix from the JS Fixes section, this also works:
+> ```javascript
+> var values = $('#mySelect').multiSelectDD('val');
+> ```
+
+### Getting Values for $.serialize() / AJAX Form Submit
+
+The plugin keeps the hidden `<select>` in sync, so `$.serialize()` picks up
+selected values automatically — **as long as the `<select>` has a `name` attribute**.
+
+```html
+<!-- Required: name attribute must be present -->
+<select id="skills" name="skills" class="multiDD" multiple></select>
+```
+
+```javascript
+// $.serialize() — works automatically
+$.ajax({
+    url: '/YourController/Save',
+    method: 'POST',
+    data: $('form').serialize()
+    // sends: skills=1&skills=3&skills=5
+});
+
+// FormData approach
+var fd = new FormData($('form')[0]);
+$.ajax({
+    url: '/YourController/Save',
+    method: 'POST',
+    data: fd,
+    processData: false,
+    contentType: false
+});
+```
+
+**Controller:**
+```csharp
+[HttpPost]
+public IActionResult Save(List<int> skills)
+{
+    // skills = [1, 3, 5]
+}
+```
+
+> ⚠️ If you use an AJAX data source (no static `<option>` tags in HTML), apply the
+> `syncSelect()` fix from the JS Fixes section. Without it, `$.serialize()` sends
+> nothing because no `<option>` tags exist in the DOM at submit time.
+
+### Setting Predefined Values (Edit Forms)
+
+**Static data — works immediately:**
+```javascript
+$('#mySelect').multiSelectDD({
+    data: [
+        { value: '1', text: 'Option 1' },
+        { value: '2', text: 'Option 2' }
+    ]
+});
+$('#mySelect').multiSelectDD('val', ['1', '2']);
+```
+
+**With AJAX — data loads async, so use `onLoad` callback:**
+```javascript
+// Pass selected IDs from your model into JS
+var preSelected = @Html.Raw(Json.Serialize(Model.SelectedIds)); // e.g. [1, 3]
+
+$('#mySelect').multiSelectDD({
+    ajax: '/api/items',
+    onLoad: function() {
+        $('#mySelect').multiSelectDD('val', preSelected.map(String));
+    }
+});
+```
+
+> After applying the `_pendingValues` fix from the JS Fixes section, you can
+> call `val()` immediately without the `onLoad` callback:
+> ```javascript
+> $('#mySelect').multiSelectDD({ ajax: '/api/items' });
+> $('#mySelect').multiSelectDD('val', preSelected.map(String));
+> ```
+
+### Setting Predefined Values with Pagination (Edit Forms)
+
+With pagination enabled, only the first page is loaded initially.
+If a preselected value is on page 2+, you must pass it via `onLoad`
+**and** ensure your API returns those items on page 1, OR pass `selected: true`
+from the server response.
+
+**Recommended — mark selected items in the API response:**
+```csharp
+// In your API controller, mark items as selected based on saved data
+var savedIds = GetSavedIdsForUser(userId); // e.g. [5, 12]
+
+var items = query
+    .Skip((page - 1) * pageSize)
+    .Take(pageSize)
+    .Select(c => new {
+        value = c.Id.ToString(),
+        text  = c.Name,
+        selected = savedIds.Contains(c.Id)  // <-- mark selected here
+    })
+    .ToList();
+```
+
+The plugin reads `selected: true` from each item in the AJAX response and
+pre-checks them as pages load.
+
+**Alternative — force selected items to appear on page 1:**
+```csharp
+[HttpGet]
+public IActionResult GetItems(int page = 1, int pageSize = 20,
+                              string search = "", string selectedIds = "")
+{
+    var ids = selectedIds.Split(',').Where(x => !string.IsNullOrEmpty(x))
+                         .Select(int.Parse).ToList();
+
+    var query = _context.Items.AsQueryable();
+    if (!string.IsNullOrEmpty(search))
+        query = query.Where(i => i.Name.Contains(search));
+
+    // Always include selected items on page 1
+    List<Item> items;
+    if (page == 1 && ids.Any())
+    {
+        var selected = query.Where(i => ids.Contains(i.Id)).ToList();
+        var rest = query.Where(i => !ids.Contains(i.Id))
+                        .Take(pageSize - selected.Count).ToList();
+        items = selected.Concat(rest).ToList();
+    }
+    else
+    {
+        items = query.Where(i => !ids.Contains(i.Id))
+                     .Skip((page - 1) * pageSize)
+                     .Take(pageSize).ToList();
+    }
+
+    return Json(new {
+        items    = items.Select(i => new { value = i.Id.ToString(), text = i.Name }),
+        hasMore  = query.Count() > page * pageSize,
+    });
+}
+```
+
+**JavaScript — pass selected IDs to the AJAX request:**
+```javascript
+var preSelected = @Html.Raw(Json.Serialize(Model.SelectedIds));
+
+$('#mySelect').multiSelectDD({
+    ajax: {
+        url: '/api/items',
+        data: { selectedIds: preSelected.join(',') }
+    },
+    pagination: {
+        enabled: true,
+        pageSize: 20
+    }
+});
 ```
 
 ### Enable/Disable
 
 ```javascript
-// Disable
 $('#mySelect').multiSelectDD('disable');
-// Or jQuery way
-$('#mySelect').prop('disabled', true);
-
-// Enable
 $('#mySelect').multiSelectDD('enable');
-// Or jQuery way
-$('#mySelect').prop('disabled', false);
 ```
 
 ### Clear Selection
 
 ```javascript
-// Clear all selections
 $('#mySelect').multiSelectDD('clear');
-
-// Alternative
-$('#mySelect').val([]);
 ```
 
 ### Select All
 
 ```javascript
-// Select all options
 $('#mySelect').multiSelectDD('selectAll');
 ```
 
 ### Add/Remove Options
 
 ```javascript
-// Add single option
+// Add option
 $('#mySelect').multiSelectDD('addOption', 'value4', 'Option 4', false);
-
-// Add option via jQuery
-$('#mySelect').append('<option value="value4">Option 4</option>');
-$('#mySelect').multiSelectDD('refresh');
 
 // Remove option
 $('#mySelect').multiSelectDD('removeOption', 'value4');
 
-// Remove via jQuery
-$('#mySelect').find('option[value="value4"]').remove();
+// Add via jQuery then refresh
+$('#mySelect').append('<option value="value4">Option 4</option>');
 $('#mySelect').multiSelectDD('refresh');
 ```
 
-### Refresh
+### Refresh / Reload
 
 ```javascript
-// Refresh the dropdown (reload from <select>)
+// Refresh from <select> tags
 $('#mySelect').multiSelectDD('refresh');
-```
 
-### Reload AJAX Data
-
-```javascript
-// Reload data from AJAX endpoint
+// Reload AJAX data from scratch
 $('#mySelect').multiSelectDD('reload');
 ```
 
 ### Destroy
 
 ```javascript
-// Remove plugin and restore original select
 $('#mySelect').multiSelectDD('destroy');
 ```
 
@@ -266,6 +432,9 @@ $('#mySelect').multiSelectDD({
     },
     onUnselect: function(value, text, item) {
         console.log('Unselected:', value, text);
+    },
+    onLoad: function(data) {
+        console.log('Data loaded:', data.length, 'items');
     },
     onMaxReached: function(max) {
         alert('Maximum ' + max + ' items allowed!');
@@ -300,7 +469,7 @@ $('#mySelect').multiSelectDD({
 });
 ```
 
-### 3. AJAX URL
+### 3. AJAX URL (simple)
 
 ```javascript
 $('#mySelect').multiSelectDD({
@@ -315,9 +484,7 @@ $('#mySelect').multiSelectDD({
     ajax: {
         url: '/api/dropdown/getData',
         method: 'POST',
-        data: {
-            categoryId: 5
-        }
+        data: { categoryId: 5 }
     }
 });
 ```
@@ -350,7 +517,7 @@ $('#products').multiSelectDD({
 }
 ```
 
-Or simplified:
+Or simplified array:
 
 ```json
 [
@@ -372,13 +539,13 @@ $('#products').multiSelectDD({
 });
 ```
 
-### Server-Side Parameters
+### Server-Side Parameters Sent Automatically
 
-The plugin automatically sends these parameters:
-
-- `page` - Current page number (starts at 1)
-- `pageSize` - Items per page
-- `search` - Search term (if search is enabled)
+| Parameter | Description |
+|-----------|-------------|
+| `page` | Current page number (starts at 1) |
+| `pageSize` | Items per page |
+| `search` | Search term (if search is enabled) |
 
 ### Server-Side Search
 
@@ -386,7 +553,7 @@ The plugin automatically sends these parameters:
 $('#products').multiSelectDD({
     ajax: {
         url: '/api/products',
-        search: true  // Enable server-side search
+        search: true
     },
     search: true
 });
@@ -399,7 +566,6 @@ $('#products').multiSelectDD({
 ### Example 1: ViewBag with Razor
 
 **Controller:**
-
 ```csharp
 public IActionResult Index()
 {
@@ -414,7 +580,6 @@ public IActionResult Index()
 ```
 
 **View:**
-
 ```html
 <select name="countries" class="multiDD" multiple>
     @foreach(var country in ViewBag.Countries)
@@ -427,7 +592,6 @@ public IActionResult Index()
 ### Example 2: AJAX with API Controller
 
 **JavaScript:**
-
 ```javascript
 $('#categories').multiSelectDD({
     ajax: '@Url.Action("GetCategories", "Api")',
@@ -439,39 +603,34 @@ $('#categories').multiSelectDD({
 ```
 
 **API Controller:**
-
 ```csharp
 [HttpGet]
 public IActionResult GetCategories(int page = 1, int pageSize = 20, string search = "")
 {
     var query = _context.Categories.AsQueryable();
-    
-    // Apply search filter
+
     if (!string.IsNullOrEmpty(search))
-    {
         query = query.Where(c => c.Name.Contains(search));
-    }
-    
+
     var totalCount = query.Count();
     var items = query
         .Skip((page - 1) * pageSize)
         .Take(pageSize)
         .Select(c => new { value = c.Id.ToString(), text = c.Name })
         .ToList();
-    
+
     return Json(new
     {
-        items = items,
-        hasMore = (page * pageSize) < totalCount,
+        items      = items,
+        hasMore    = (page * pageSize) < totalCount,
         totalCount = totalCount
     });
 }
 ```
 
-### Example 3: Form Submission
+### Example 3: Form Submission (Regular POST)
 
 **View:**
-
 ```html
 @using (Html.BeginForm("SavePreferences", "User", FormMethod.Post))
 {
@@ -480,41 +639,192 @@ public IActionResult GetCategories(int page = 1, int pageSize = 20, string searc
         <select name="skills" class="multiDD" multiple>
             @foreach(var skill in Model.AvailableSkills)
             {
-                <option value="@skill.Id" 
+                <option value="@skill.Id"
                         @(Model.SelectedSkills.Contains(skill.Id) ? "selected" : "")>
                     @skill.Name
                 </option>
             }
         </select>
     </div>
-    
     <button type="submit">Save</button>
 }
 ```
 
 **Controller:**
-
 ```csharp
 [HttpPost]
 public IActionResult SavePreferences(List<string> skills)
 {
-    // skills will contain all selected values
-    // e.g., ["1", "3", "5"]
-    
+    // skills = ["1", "3", "5"]
     return RedirectToAction("Index");
 }
 ```
 
-### Example 4: Dynamic Loading with Cascading
+### Example 4: AJAX Form Submit with $.serialize()
+
+```javascript
+$('form').on('submit', function(e) {
+    e.preventDefault();
+
+    $.ajax({
+        url: '/YourController/Save',
+        method: 'POST',
+        data: $(this).serialize(),
+        success: function(response) {
+            console.log('Saved');
+        }
+    });
+});
+```
+
+> The plugin syncs selected values back to the hidden `<select>` on every change,
+> so `$.serialize()` picks them up with no extra steps needed.
+>
+> ⚠️ If you use AJAX data (no static `<option>` tags), apply the `syncSelect()` fix
+> so options exist in the DOM at submit time.
+
+### Example 5: AJAX Form Submit with FormData
+
+```javascript
+$('form').on('submit', function(e) {
+    e.preventDefault();
+
+    var fd = new FormData(this);
+
+    $.ajax({
+        url: '/YourController/Save',
+        method: 'POST',
+        data: fd,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            console.log('Saved');
+        }
+    });
+});
+```
+
+### Example 6: Edit Form with Predefined Values (Static Data)
+
+**Controller:**
+```csharp
+public IActionResult Edit(int id)
+{
+    var model = new EditViewModel
+    {
+        AvailableSkills = _context.Skills
+            .Select(s => new SelectListItem { Value = s.Id.ToString(), Text = s.Name })
+            .ToList(),
+        SelectedSkillIds = _context.UserSkills
+            .Where(us => us.UserId == id)
+            .Select(us => us.SkillId.ToString())
+            .ToList()
+    };
+    return View(model);
+}
+```
+
+**View:**
+```html
+<select name="skills" class="multiDD" multiple>
+    @foreach(var skill in Model.AvailableSkills)
+    {
+        <option value="@skill.Value"
+                @(Model.SelectedSkillIds.Contains(skill.Value) ? "selected" : "")>
+            @skill.Text
+        </option>
+    }
+</select>
+```
+
+The plugin reads `selected` from `<option>` tags automatically on init.
+
+### Example 7: Edit Form with Predefined Values (AJAX Data)
+
+```javascript
+// Pass saved IDs from model into JS
+var preSelected = @Html.Raw(Json.Serialize(Model.SelectedSkillIds)); // ["1","3"]
+
+$('#skills').multiSelectDD({
+    ajax: '/api/skills',
+    onLoad: function() {
+        $('#skills').multiSelectDD('val', preSelected);
+    }
+});
+```
+
+### Example 8: Edit Form with Predefined Values + Pagination
+
+When pagination is enabled, mark selected items in your API response so they
+are highlighted as each page loads:
+
+```csharp
+[HttpGet]
+public IActionResult GetSkills(int page = 1, int pageSize = 20,
+                               string search = "", string selectedIds = "")
+{
+    var ids = string.IsNullOrEmpty(selectedIds)
+        ? new List<int>()
+        : selectedIds.Split(',').Select(int.Parse).ToList();
+
+    var query = _context.Skills.AsQueryable();
+    if (!string.IsNullOrEmpty(search))
+        query = query.Where(s => s.Name.Contains(search));
+
+    var totalCount = query.Count();
+
+    // On page 1, always bring selected items to the top
+    List<Skill> items;
+    if (page == 1 && ids.Any())
+    {
+        var selected = query.Where(s => ids.Contains(s.Id)).ToList();
+        var rest = query.Where(s => !ids.Contains(s.Id))
+                        .Take(pageSize - selected.Count).ToList();
+        items = selected.Concat(rest).ToList();
+    }
+    else
+    {
+        items = query.Where(s => !ids.Contains(s.Id))
+                     .Skip((page - 1) * pageSize)
+                     .Take(pageSize).ToList();
+    }
+
+    return Json(new {
+        items = items.Select(s => new {
+            value    = s.Id.ToString(),
+            text     = s.Name,
+            selected = ids.Contains(s.Id)   // plugin reads this
+        }),
+        hasMore = (page * pageSize) < totalCount
+    });
+}
+```
+
+**JavaScript:**
+```javascript
+var preSelected = @Html.Raw(Json.Serialize(Model.SelectedSkillIds));
+
+$('#skills').multiSelectDD({
+    ajax: {
+        url: '/api/skills',
+        data: { selectedIds: preSelected.join(',') }
+    },
+    pagination: {
+        enabled: true,
+        pageSize: 20
+    }
+});
+```
+
+### Example 9: Dynamic Loading with Cascading Dropdowns
 
 ```javascript
 $('#country').on('change', function() {
     var countryId = $(this).val();
-    
-    // Clear and reload cities
+
     $('#cities').multiSelectDD('destroy');
     $('#cities').empty();
-    
+
     $('#cities').multiSelectDD({
         ajax: '/api/cities?countryId=' + countryId,
         placeholder: 'Select cities...'
@@ -522,9 +832,7 @@ $('#country').on('change', function() {
 });
 ```
 
-### Example 5: Tag Helper (Custom)
-
-Create a custom tag helper:
+### Example 10: Tag Helper (Custom)
 
 ```csharp
 [HtmlTargetElement("multiselect-dd")]
@@ -535,30 +843,28 @@ public class MultiSelectDDTagHelper : TagHelper
     public bool Search { get; set; } = true;
     public bool SelectAll { get; set; } = true;
     public List<SelectListItem> Items { get; set; }
-    
+
     public override void Process(TagHelperContext context, TagHelperOutput output)
     {
         output.TagName = "select";
         output.Attributes.Add("name", Name);
         output.Attributes.Add("class", "multiDD");
         output.Attributes.Add("multiple", "multiple");
-        output.Attributes.Add("data-placeholder", Placeholder);
-        output.Attributes.Add("data-search", Search.ToString().ToLower());
-        output.Attributes.Add("data-select-all", SelectAll.ToString().ToLower());
-        
+
         foreach (var item in Items)
         {
-            output.Content.AppendHtml($"<option value='{item.Value}'>{item.Text}</option>");
+            output.Content.AppendHtml(
+                $"<option value='{item.Value}'{(item.Selected ? " selected" : "")}>{item.Text}</option>"
+            );
         }
     }
 }
 ```
 
 Usage:
-
 ```html
-<multiselect-dd name="countries" 
-                placeholder="Select countries" 
+<multiselect-dd name="countries"
+                placeholder="Select countries"
                 items="@Model.Countries">
 </multiselect-dd>
 ```
@@ -569,21 +875,19 @@ Usage:
 
 ### CSS Variables
 
-Customize appearance using CSS variables:
-
 ```css
 :root {
     --multidd-primary-color: #007bff;
     --multidd-border-radius: 8px;
     --multidd-font-size-larger: 14px;
     --multidd-input-min-height: 50px;
+    --multidd-options-height: 40dvh;
 }
 ```
 
-### Custom Theme Example
+### Dark Theme Example
 
 ```css
-/* Dark theme */
 .dark-theme .multidd-header {
     background-color: #2d3748;
     border-color: #4a5568;
@@ -603,58 +907,28 @@ Customize appearance using CSS variables:
 ### Override Specific Styles
 
 ```css
-/* Custom width */
-.multidd-container {
-    max-width: 400px;
-}
-
-/* Custom header height */
-.multidd-header {
-    min-height: 60px;
-}
-
-/* Custom dropdown height */
-.multidd-dropdown {
-    max-height: 300px;
-}
+.multidd-container { max-width: 400px; }
+.multidd-header    { min-height: 60px; }
+.multidd-dropdown  { max-height: 300px; }
 ```
 
 ---
 
 ## Accessibility
 
-The plugin includes built-in accessibility features:
-
-- **ARIA Attributes**: `role`, `aria-expanded`, `aria-selected`
-- **Keyboard Navigation**: Arrow keys, Enter, Space, Escape
-- **Focus Management**: Proper tab order and focus indicators
-- **Screen Reader Support**: Semantic HTML and labels
+- ARIA attributes: `role`, `aria-expanded`, `aria-selected`
+- Keyboard navigation: Arrow keys, Enter, Space, Escape
+- Focus management with visible focus indicators
+- Screen reader compatible
 
 ### Keyboard Shortcuts
 
 | Key | Action |
 |-----|--------|
-| `Tab` | Focus on dropdown header |
+| `Tab` | Focus dropdown header |
 | `Enter` / `Space` | Open/close dropdown |
-| `Arrow Down` | Navigate to next option |
-| `Arrow Up` | Navigate to previous option |
-| `Enter` / `Space` | Select/unselect focused option |
+| `Arrow Down` | Open dropdown / next option |
 | `Escape` | Close dropdown |
-
-### Best Practices
-
-```html
-<!-- Always include labels -->
-<label for="countries">Select Countries</label>
-<select id="countries" name="countries" class="multiDD" multiple>
-    <option value="us">United States</option>
-</select>
-
-<!-- For required fields -->
-<select name="skills" class="multiDD" multiple required>
-    ...
-</select>
-```
 
 ---
 
@@ -669,136 +943,126 @@ The plugin includes built-in accessibility features:
 | Opera | 47+ |
 | IE | Not supported |
 
-### Mobile Support
-
-Fully responsive and touch-friendly:
-- iOS Safari 11+
-- Chrome for Android
-- Samsung Internet
+Mobile: iOS Safari 11+, Chrome for Android, Samsung Internet.
 
 ---
 
 ## Troubleshooting
 
-### Issue: Dropdown doesn't initialize
+### Values not submitting with form POST
 
-**Solution:**
+- Make sure `name` attribute is set on the `<select>`
+- If using AJAX data source, apply the `syncSelect()` fix so `<option>` tags exist in DOM
+
+### val() returns undefined
+
+Use the instance directly:
 ```javascript
-// Make sure jQuery is loaded first
-// Check if element exists
+var values = $('#mySelect').data('multiSelectDD').getSelectedValues();
+```
+Or apply the val() getter fix from the JS Fixes section.
+
+### Predefined values not showing on edit form with AJAX
+
+Use `onLoad` callback or apply the `_pendingValues` fix:
+```javascript
+$('#mySelect').multiSelectDD({
+    ajax: '/api/items',
+    onLoad: function() {
+        $('#mySelect').multiSelectDD('val', preSelected);
+    }
+});
+```
+
+### Predefined values not showing with pagination
+
+Mark `selected: true` on matching items in your API response, and pass selected IDs
+as a parameter so page 1 always includes them (see Example 8).
+
+### AJAX not loading
+
+- Check browser console for errors
+- Verify the API returns `{ items: [...], hasMore: bool }` or a plain array
+- Check CORS settings if on a different domain
+
+### Dropdown doesn't initialize
+
+```javascript
 if ($('#mySelect').length) {
     $('#mySelect').multiSelectDD();
 }
 ```
 
-### Issue: Values not submitting with form
+### Conflicts with existing styles
 
-**Solution:**
-```javascript
-// The original <select> is synced automatically
-// Make sure the name attribute is set
-<select name="countries[]" class="multiDD" multiple>
-```
-
-### Issue: AJAX not loading
-
-**Solution:**
-```javascript
-// Check browser console for errors
-// Verify API endpoint returns correct format
-// Check CORS settings if different domain
-```
-
-### Issue: Conflicts with existing styles
-
-**Solution:**
 ```css
-/* Use more specific selectors */
-.my-form .multidd-container {
-    /* Your overrides */
-}
-
-/* Or change CSS variable values */
-:root {
-    --multidd-primary-color: #your-color;
-}
+.my-form .multidd-container { /* scoped overrides */ }
 ```
 
 ---
 
-## Advanced Examples
+## JS Fixes Reference
 
-### Example: Conditional Options
+These are targeted changes needed in `multidd_js_file.js` to fix known issues
+in ASP.NET Core MVC usage. See the issues and exact line locations below.
 
+### Fix 1 — val() getter ($.fn.multiSelectDD, line ~757)
+
+Add before `return this.each(...)`:
 ```javascript
-$('#role').on('change', function() {
-    if ($(this).val() === 'admin') {
-        $('#permissions').multiSelectDD('enable');
-    } else {
-        $('#permissions').multiSelectDD('disable');
-        $('#permissions').multiSelectDD('clear');
-    }
-});
-```
-
-### Example: Custom Validation
-
-```javascript
-$('#skills').multiSelectDD({
-    min: 2,
-    max: 5,
-    onChange: function(value, text, item) {
-        var count = $(this).val().length;
-        if (count < 2) {
-            $('.error-msg').text('Please select at least 2 skills');
-        } else {
-            $('.error-msg').text('');
-        }
-    }
-});
-```
-
-### Example: Real-time Filtering
-
-```javascript
-$('#products').multiSelectDD({
-    ajax: {
-        url: '/api/products',
-        search: true
-    },
-    search: true,
-    onChange: function() {
-        updateCart();
-    }
-});
-
-function updateCart() {
-    var selected = $('#products').val();
-    // Update UI or send to server
+if (typeof options === 'string' && args.length === 0 &&
+    ['val', 'getSelectedValues', 'getSelectedItems'].includes(options)) {
+    const instance = $(this.get(0)).data('multiSelectDD');
+    return instance ? instance[options]() : [];
 }
+```
+
+### Fix 2 — syncSelect() for AJAX + form submit (line ~519)
+
+Add before `this.$select.find('option').prop('selected', false)`:
+```javascript
+this.allData.forEach(item => {
+    if (!this.$select.find(`option[value="${item.value}"]`).length) {
+        this.$select.append($('<option>', { value: item.value, text: item.text }));
+    }
+});
+```
+
+### Fix 3 — val() setter: type mismatch + AJAX timing (line ~581)
+
+```javascript
+const xisxusNewValues = values.map(String); // convert to strings
+
+if (this.options.ajax && this.allData.length === 0) {
+    this._pendingValues = xisxusNewValues;   // store for after AJAX loads
+    return;
+}
+
+item.selected = xisxusNewValues.includes(String(item.value)); // string compare
+```
+
+### Fix 4 — loadAjaxData() success: apply pending values (line ~705)
+
+In the `if (self.currentPage === 1)` block, change `selected: item.selected || false` to:
+```javascript
+const pendingValues = self._pendingValues || [];
+// ...
+selected: item.selected || pendingValues.includes(String(item.value)),
+// after the map():
+self._pendingValues = null;
 ```
 
 ---
 
-## PlayGround
+## Playground
 
-```javascript
 https://xisxus.github.io/MultiSelectDD-Document/
-```
+
+---
 
 ## License
 
-MIT License - Feel free to use in personal and commercial projects.
-
----
-
-## Support
-
-For issues or questions:
-1. Check this documentation
-2. Review code examples
-3. Check browser console for errors
-4. Verify jQuery version compatibility
+MIT License — free to use in personal and commercial projects.
 
 ---
 
@@ -807,8 +1071,8 @@ For issues or questions:
 ### Version 1.0.0
 - Initial release
 - jQuery compatibility
-- AJAX support
+- AJAX support with server-side search
 - Infinite scroll pagination
-- Full .NET integration
+- Full .NET / ASP.NET Core MVC integration
 - Accessibility features
 - Responsive design
