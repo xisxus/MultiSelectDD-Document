@@ -368,6 +368,7 @@ and won't appear checked unless handled server-side.
 
 **JavaScript — reusable init function:**
 ```javascript
+
 function initSecurityEmployees(selectedIds) {
     if (selectedIds !== undefined && selectedIds !== null) {
         if (!Array.isArray(selectedIds)) selectedIds = [selectedIds];
@@ -381,7 +382,12 @@ function initSecurityEmployees(selectedIds) {
             url: '/SecurityTeams/SearchEmployeesAD',
             data: selectedIds && selectedIds.length ? { selectedIds: selectedIds.join(',') } : {}
         },
-        pagination: { enabled: true, pageSize: 50, scrollThreshold: 0.8 }
+        pagination: { enabled: true, pageSize: 50, scrollThreshold: 0.8 },
+        onLoad: function() {
+            // force sync so <option> tags exist for form submit
+            var instance = $('#SecurityEmployeeId').data('multiSelectDD');
+            if (instance) instance.syncSelect();
+        }
     });
 }
 
