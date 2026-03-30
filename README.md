@@ -26,7 +26,24 @@ Dependencies: jQuery 3.x+
 
 ## Installation
 
-### 1. Include Files
+### 1. CDN Method (copy/paste ready)
+
+Copy this block directly into your HTML:
+
+```html
+<!-- jQuery (required) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+```
+```
+<!-- MultiSelect DD CSS (CDN) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/xisxus/MultiSelectDD-Document@v1.0.0/multidd_css_file.css">
+```
+```
+<!-- MultiSelect DD JS (CDN) -->
+<script src="https://cdn.jsdelivr.net/gh/xisxus/MultiSelectDD-Document@v1.0.0/multidd_js_file.js"></script>
+```
+
+### 2. Include Files
 
 ```html
 <!-- jQuery (required) -->
@@ -39,7 +56,9 @@ Dependencies: jQuery 3.x+
 <script src="path/to/multiselect-dd.js"></script>
 ```
 
-### 2. File Structure
+
+
+### 3. File Structure
 
 ```
 your-project/
@@ -51,6 +70,7 @@ your-project/
 ```
 
 ---
+
 
 ## Quick Start
 
